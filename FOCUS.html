@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusFlow - Your Focus Goals</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        @keyframes fadeInOut {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            15%, 85% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
+        
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+        
+        /* Optimize mobile scrolling experience */
+        .stage-scroll-container {
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e0 transparent;
+        }
+        
+        .stage-scroll-container::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        .stage-scroll-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .stage-scroll-container::-webkit-scrollbar-thumb {
+            background-color: #cbd5e0;
+            border-radius: 3px;
+        }
+        
+        .stage-scroll-container::-webkit-scrollbar-thumb:hover {
+            background-color: #a0aec0;
+        }
+        
+        /* Breathing light animation */
+        @keyframes breathe {
+            0%, 100% {
+                opacity: 1;
+                text-shadow: 0 0 20px rgba(74, 222, 128, 0.5);
+            }
+            50% {
+                opacity: 0.8;
+                text-shadow: 0 0 30px rgba(74, 222, 128, 0.8);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-4xl mx-auto px-6 py-12">
+        <!-- Initial Setup View -->
+        <div id="setupView" class="hidden">
+            <h1 class="text-5xl font-bold text-gray-900 mb-8 tracking-tight">Set Your Focus Goal</h1>
+            
+            <!-- Goal Input -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">What is your goal?</label>
+                <input 
+                    type="text" 
+                    id="goalInput" 
+                    placeholder="e.g., Build a creative content business"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-lg"
+                >
+            </div>
+
+            <!-- Task List -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-4">Add Tasks</label>
+                <div id="taskInputs" class="space-y-3">
+                    <!-- Task input fields will be dynamically added -->
+                </div>
+                <button 
+                    id="addTaskBtn" 
+                    class="mt-4 px-4 py-2 text-blue-600 hover:text-blue-700 font-medium text-sm"
+                >
+                    + Add Task
+                </button>
+            </div>
+
+            <!-- Save Button -->
+            <button 
+                id="saveSetupBtn" 
+                class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            >
+                Start Focusing
+            </button>
+        </div>
+
+        <!-- 主界面 -->
+        <div id="mainView" class="hidden">
+            <!-- 标题和添加任务按钮 -->
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3 flex-1 group">
+                    <h1 
+                        id="goalTitle" 
+                        class="text-5xl font-bold text-gray-900 tracking-tight cursor-pointer hover:bg-gray-100 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors border-2 border-transparent hover:border-gray-200"
+                        onclick="editGoal()"
+                    ></h1>
+                    <button
+                        onclick="editGoal()"
+                        class="text-gray-400 hover:text-blue-600 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Edit goal"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                    </button>
+                </div>
+                <button 
+                    id="addNewTaskBtn" 
+                    class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm"
+                >
+                    + Add Task
+                </button>
+            </div>
+            <p class="text-gray-500 mb-4">Select today's tasks and track your progress</p>
+
+            <!-- Start Focus Mode Button -->
+            <div class="mb-6">
+                <button 
+                    id="startFocusModeBtn" 
+                    class="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                >
+                    🎯 Start Focus Mode
+                </button>
+            </div>
+
+            <!-- Task List -->
+            <div id="taskList" class="space-y-4">
+                <!-- Task cards will be dynamically generated -->
+            </div>
+        </div>
+
+        <!-- Focus Mode View -->
+        <div id="focusView" class="hidden fixed inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white z-50 overflow-y-auto transition-opacity duration-500">
+            <div class="min-h-screen flex flex-col">
+                <!-- Top: Timer and Exit Button -->
+                <div class="flex items-center justify-between p-6">
+                    <button 
+                        id="exitFocusModeBtn"
+                        class="px-4 py-2 bg-white bg-opacity-10 hover:bg-opacity-20 rounded-lg transition-all duration-300 text-white font-medium"
+                    >
+                        ← Exit Focus Mode
+                    </button>
+                    <div class="flex-1"></div>
+                </div>
+
+                <!-- Pomodoro Timer -->
+                <div class="text-center py-8">
+                    <div class="mb-6">
+                        <div class="text-8xl font-bold mb-4 font-mono" id="pomodoroTimer" style="color: #4ade80; text-shadow: 0 0 20px rgba(74, 222, 128, 0.5); animation: breathe 3s ease-in-out infinite;">25:00</div>
+                        <div class="flex items-center justify-center gap-3">
+                            <button 
+                                id="decreaseTimeBtn"
+                                class="px-4 py-2 bg-white bg-opacity-10 hover:bg-opacity-20 rounded-lg font-semibold transition-all duration-300 text-white"
+                                title="Decrease 5 minutes"
+                            >
+                                -5min
+                            </button>
+                            <button 
+                                id="increaseTimeBtn"
+                                class="px-4 py-2 bg-white bg-opacity-10 hover:bg-opacity-20 rounded-lg font-semibold transition-all duration-300 text-white"
+                                title="Increase 5 minutes"
+                            >
+                                +5min
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-center gap-4">
+                        <button 
+                            id="startPomodoroBtn"
+                            class="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-all duration-300 shadow-lg"
+                        >
+                            Start
+                        </button>
+                        <button 
+                            id="pausePomodoroBtn"
+                            class="px-8 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-all duration-300 shadow-lg hidden"
+                        >
+                            Pause
+                        </button>
+                        <button 
+                            id="resetPomodoroBtn"
+                            class="px-8 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-all duration-300 shadow-lg"
+                        >
+                            Reset
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Today's Task List -->
+                <div class="flex-1 px-6 pb-6">
+                    <div id="focusTaskList" class="max-w-4xl mx-auto space-y-6">
+                        <!-- Today's tasks will be dynamically generated -->
+                    </div>
+                </div>
+
+                <!-- Bottom Quote -->
+                <div class="text-center py-8 px-6">
+                    <p class="text-gray-400 text-lg italic">Scrolling consumes energy, but creating refills it.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Task Modal -->
+        <div id="editTaskModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">Edit Task</h2>
+                
+                <!-- Task Name -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Task Name</label>
+                    <input 
+                        type="text" 
+                        id="editTaskName" 
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    >
+                </div>
+
+                <!-- Numeric Task Inputs -->
+                <div id="editNumericInputsContainer" class="hidden mb-4">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Total Count</label>
+                            <input 
+                                type="number" 
+                                id="editTotal" 
+                                min="1"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            >
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Current Completed</label>
+                            <input 
+                                type="number" 
+                                id="editCurrent" 
+                                min="0"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            >
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Estimated Duration (minutes, optional)</label>
+                        <input 
+                            type="number" 
+                            id="editEstimatedTime" 
+                            min="0"
+                            placeholder="e.g., 25"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        >
+                    </div>
+                </div>
+
+                <!-- Stage Task Steps Input -->
+                <div id="editStageStepsContainer" class="hidden mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Steps (separate with commas or line breaks, e.g., Sketch, Line Art, Color, Refine)</label>
+                    <textarea 
+                        id="editStageStepsInput" 
+                        rows="4"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                    ></textarea>
+                    
+                    <!-- Live Preview -->
+                    <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <label class="block text-xs font-medium text-gray-600 mb-2">Preview:</label>
+                        <div id="editStagePreview" class="overflow-x-auto stage-scroll-container">
+                            <div class="flex items-start pb-2" style="min-width: max-content;">
+                                <!-- Preview content will be dynamically generated -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Estimated Duration (minutes, optional)</label>
+                        <input 
+                            type="number" 
+                            id="editStageEstimatedTime" 
+                            min="0"
+                            placeholder="e.g., 25"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        >
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex gap-3">
+                    <button 
+                        id="cancelEditTaskBtn"
+                        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        id="confirmEditTaskBtn"
+                        class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Task Modal -->
+        <div id="addTaskModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">Add New Task</h2>
+                
+                <!-- Task Name -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Task Name</label>
+                    <input 
+                        type="text" 
+                        id="modalTaskName" 
+                        placeholder="e.g., Watch Course"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    >
+                </div>
+
+                <!-- Task Type Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Task Type</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                            <input type="radio" name="taskType" value="numeric" class="mr-3" checked>
+                            <div>
+                                <div class="font-medium text-gray-900">Numeric Tracking</div>
+                                <div class="text-sm text-gray-500">e.g., Watch Course, Reading (track progress with numbers)</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                            <input type="radio" name="taskType" value="stage" class="mr-3">
+                            <div>
+                                <div class="font-medium text-gray-900">Stage-Based</div>
+                                <div class="text-sm text-gray-500">e.g., Sketching, Writing (track progress with steps)</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Numeric Task Inputs -->
+                <div id="numericInputsContainer" class="mb-4">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Total Count</label>
+                            <input 
+                                type="number" 
+                                id="modalTotal" 
+                                value="20"
+                                min="1"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            >
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Current Progress</label>
+                            <input 
+                                type="number" 
+                                id="modalCurrent" 
+                                value="0"
+                                min="0"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                            >
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Estimated Duration (minutes, optional)</label>
+                        <input 
+                            type="number" 
+                            id="modalEstimatedTime" 
+                            min="0"
+                            placeholder="e.g., 25"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        >
+                    </div>
+                </div>
+
+                <!-- Stage Task Steps Input -->
+                <div id="stageStepsContainer" class="hidden mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Steps (separate with commas or line breaks, e.g., Sketch, Line Art, Color, Refine)</label>
+                    <textarea 
+                        id="stageStepsInput" 
+                        placeholder="Sketch, Line Art, Color, Refine"
+                        rows="4"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                    ></textarea>
+                    
+                    <!-- Live Preview -->
+                    <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <label class="block text-xs font-medium text-gray-600 mb-2">Preview:</label>
+                        <div id="stageStepsPreview" class="overflow-x-auto stage-scroll-container">
+                            <div class="flex items-start pb-2" style="min-width: max-content;">
+                                <p class="text-gray-400 text-sm text-center py-4">Enter steps to see preview here</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Estimated Duration (minutes, optional)</label>
+                        <input 
+                            type="number" 
+                            id="modalStageEstimatedTime" 
+                            min="0"
+                            placeholder="e.g., 25"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        >
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex gap-3">
+                    <button 
+                        id="cancelAddTaskBtn"
+                        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button 
+                        id="confirmAddTaskBtn"
+                        class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        Add
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Management
+        const Storage = {
+            getGoal: () => localStorage.getItem('focusGoal'),
+            setGoal: (goal) => localStorage.setItem('focusGoal', goal),
+            getTasks: () => {
+                const tasks = localStorage.getItem('focusTasks');
+                return tasks ? JSON.parse(tasks) : [];
+            },
+            setTasks: (tasks) => localStorage.setItem('focusTasks', JSON.stringify(tasks)),
+            getLastDate: () => localStorage.getItem('lastDate'),
+            setLastDate: (date) => localStorage.setItem('lastDate', date),
+        };
+
+        // 检查是否换天，如果是则重置今天的选择
+        function checkDailyReset() {
+            const today = new Date().toDateString();
+            const lastDate = Storage.getLastDate();
+            
+            if (lastDate !== today) {
+                const tasks = Storage.getTasks();
+                tasks.forEach(task => task.today = false);
+                Storage.setTasks(tasks);
+                Storage.setLastDate(today);
+            }
+        }
+
+        // 初始化
+        function init() {
+            checkDailyReset();
+            
+            const goal = Storage.getGoal();
+            if (!goal) {
+                // 首次使用，显示设置界面
+                showSetupView();
+            } else {
+                // 已设置，显示主界面
+                showMainView();
+            }
+        }
+
+        // 显示设置界面
+        function showSetupView() {
+            document.getElementById('setupView').classList.remove('hidden');
+            document.getElementById('mainView').classList.add('hidden');
+            
+            // 添加初始任务输入框
+            addTaskInput();
+            
+            // 添加任务按钮
+            document.getElementById('addTaskBtn').onclick = addTaskInput;
+            
+            // 保存设置
+            document.getElementById('saveSetupBtn').onclick = saveSetup;
+        }
+
+        // 添加任务输入框
+        function addTaskInput() {
+            const container = document.getElementById('taskInputs');
+            const div = document.createElement('div');
+            div.className = 'flex gap-2';
+            div.innerHTML = `
+                <input 
+                    type="text" 
+                    placeholder="Task name (e.g., Watch Course)"
+                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                >
+                <button 
+                    class="px-3 py-2 text-red-500 hover:text-red-700 font-medium"
+                    onclick="this.parentElement.remove()"
+                >
+                    Delete
+                </button>
+            `;
+            container.appendChild(div);
+        }
+
+        // 保存设置
+        function saveSetup() {
+            const goal = document.getElementById('goalInput').value.trim();
+            if (!goal) {
+                alert('Please enter your goal');
+                return;
+            }
+
+            const taskInputs = document.querySelectorAll('#taskInputs input');
+            const tasks = [];
+            taskInputs.forEach(input => {
+                const name = input.value.trim();
+                if (name) {
+                    // 默认创建数字统计类任务
+                    tasks.push({
+                        type: 'numeric',
+                        name: name,
+                        current: 0,
+                        total: 1,
+                        today: false
+                    });
+                }
+            });
+
+            if (tasks.length === 0) {
+                alert('Please add at least one task');
+                return;
+            }
+
+            Storage.setGoal(goal);
+            Storage.setTasks(tasks);
+            Storage.setLastDate(new Date().toDateString());
+            
+            showMainView();
+        }
+
+        // 显示主界面
+        function showMainView() {
+            document.getElementById('setupView').classList.add('hidden');
+            document.getElementById('mainView').classList.remove('hidden');
+            document.getElementById('focusView').classList.add('hidden');
+            
+            const goal = Storage.getGoal();
+            const titleElement = document.getElementById('goalTitle');
+            if (titleElement) {
+                titleElement.textContent = goal;
+                // 确保点击事件绑定
+                titleElement.onclick = editGoal;
+            }
+            
+            renderTasks();
+            
+            // 添加新任务按钮
+            document.getElementById('addNewTaskBtn').onclick = showAddTaskModal;
+            
+            // 开启专注模式按钮
+            document.getElementById('startFocusModeBtn').onclick = startFocusMode;
+        }
+
+        // 番茄钟相关变量
+        let pomodoroInterval = null;
+        let pomodoroTime = 25 * 60; // 25分钟，单位：秒
+        let pomodoroRunning = false;
+        let focusStartTime = null; // 记录专注开始时间
+        let lastTaskUpdateTime = null; // 记录上次任务更新时间
+
+        // 开启专注模式
+        function startFocusMode() {
+            const tasks = Storage.getTasks();
+            const todayTasks = tasks.filter(task => task.today === true);
+            
+            if (todayTasks.length === 0) {
+                alert('Please select at least one task for today first');
+                return;
+            }
+            
+            // 隐藏主界面，显示专注模式
+            document.getElementById('mainView').classList.add('hidden');
+            document.getElementById('focusView').classList.remove('hidden');
+            
+            // 渲染专注模式下的任务
+            renderFocusTasks();
+            
+            // 绑定退出按钮
+            document.getElementById('exitFocusModeBtn').onclick = exitFocusMode;
+            
+            // 绑定番茄钟按钮
+            document.getElementById('startPomodoroBtn').onclick = startPomodoro;
+            document.getElementById('pausePomodoroBtn').onclick = pausePomodoro;
+            document.getElementById('resetPomodoroBtn').onclick = resetPomodoro;
+            document.getElementById('increaseTimeBtn').onclick = increasePomodoroTime;
+            document.getElementById('decreaseTimeBtn').onclick = decreasePomodoroTime;
+            
+            // 重置番茄钟
+            resetPomodoro();
+        }
+
+        // 退出专注模式
+        function exitFocusMode() {
+            // 停止番茄钟
+            if (pomodoroInterval) {
+                clearInterval(pomodoroInterval);
+                pomodoroInterval = null;
+                pomodoroRunning = false;
+            }
+            
+            // 隐藏专注模式，显示主界面
+            document.getElementById('focusView').classList.add('hidden');
+            document.getElementById('mainView').classList.remove('hidden');
+            
+            // 重新渲染主界面任务
+            renderTasks();
+        }
+
+        // 渲染专注模式下的任务
+        function renderFocusTasks() {
+            const tasks = Storage.getTasks();
+            const todayTasks = tasks.filter(task => task.today === true);
+            const container = document.getElementById('focusTaskList');
+            container.innerHTML = '';
+
+            if (todayTasks.length === 0) {
+                container.innerHTML = '<p class="text-gray-400 text-center py-8">No tasks selected for today</p>';
+                return;
+            }
+
+            const colorMap = {
+                0: 'bg-blue-500',
+                1: 'bg-purple-500',
+                2: 'bg-green-500',
+                3: 'bg-orange-500',
+                4: 'bg-pink-500',
+                5: 'bg-indigo-500'
+            };
+            
+            todayTasks.forEach((task, index) => {
+                const colorClass = colorMap[index % 6];
+                const taskType = task.type || 'numeric';
+                
+                let cardHTML = '';
+                
+                if (taskType === 'numeric') {
+                    // 数字统计类任务
+                    const total = task.total || 1;
+                    const current = task.current || 0;
+                    
+                    // 生成所有圆圈
+                    const circles = [];
+                    for (let i = 0; i < total; i++) {
+                        const isCompleted = i < current;
+                        const isNext = i === current;
+                        circles.push(`
+                            <button
+                                onclick="clickCircleInFocus(${tasks.indexOf(task)}, ${i})"
+                                class="w-8 h-8 rounded-full border-2 transition-all duration-200 ${
+                                    isCompleted 
+                                        ? 'bg-green-500 border-green-500 hover:bg-green-600 cursor-pointer' 
+                                        : isNext
+                                        ? 'bg-white border-gray-400 hover:border-green-500 hover:bg-green-50 cursor-pointer text-gray-800'
+                                        : 'bg-white border-gray-300 cursor-not-allowed opacity-50 text-gray-800'
+                                }"
+                                title="Item ${i + 1}"
+                                ${!isCompleted && !isNext ? 'disabled' : ''}
+                            ></button>
+                        `);
+                    }
+                    
+                    cardHTML = `
+                        <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
+                            <div class="mb-4">
+                                <h2 class="text-2xl font-semibold text-white mb-2">${task.name}</h2>
+                                <span class="text-gray-300">${current}/${total}</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                ${circles.join('')}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // 阶段流程类任务
+                    const steps = task.steps || [];
+                    const completedSteps = steps.filter(s => s.completed).length;
+                    const totalSteps = steps.length;
+                    
+                    // 生成横向步骤节点
+                    const stepsWithConnectors = steps.map((step, stepIndex) => {
+                        const isCompleted = step.completed;
+                        const nodeHTML = `
+                            <div class="flex flex-col items-center flex-shrink-0" style="min-width: 80px;">
+                                <button
+                                    onclick="clickStageNodeInFocus(${tasks.indexOf(task)}, ${stepIndex})"
+                                    class="w-12 h-12 rounded-full border-2 transition-all duration-300 ${
+                                        isCompleted 
+                                            ? 'bg-blue-500 border-blue-500 hover:bg-blue-600' 
+                                            : 'bg-white border-gray-400 hover:border-blue-400 text-gray-800'
+                                    } cursor-pointer mb-2"
+                                    title="${step.name}"
+                                >
+                                    ${isCompleted ? `
+                                        <svg class="w-7 h-7 mx-auto text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    ` : ''}
+                                </button>
+                                <span class="text-sm text-center text-gray-300 max-w-[80px] break-words">${step.name}</span>
+                            </div>
+                        `;
+                        
+                        if (stepIndex < steps.length - 1) {
+                            const connectorHTML = `
+                                <div class="flex-1 h-0.5 mx-2 transition-colors duration-300 ${
+                                    isCompleted ? 'bg-blue-500' : 'bg-gray-400'
+                                }" style="margin-top: 24px;"></div>
+                            `;
+                            return nodeHTML + connectorHTML;
+                        }
+                        return nodeHTML;
+                    }).join('');
+                    
+                    cardHTML = `
+                        <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-6 border border-white border-opacity-20">
+                            <div class="mb-4">
+                                <h2 class="text-2xl font-semibold text-white mb-2">${task.name}</h2>
+                                <span class="text-gray-300">${completedSteps}/${totalSteps}</span>
+                            </div>
+                            <div class="overflow-x-auto stage-scroll-container">
+                                <div class="flex items-start pb-2" style="min-width: max-content;">
+                                    ${stepsWithConnectors}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                container.innerHTML += cardHTML;
+            });
+        }
+
+        // 检查是否在专注模式下
+        function isInFocusMode() {
+            const focusView = document.getElementById('focusView');
+            return focusView && !focusView.classList.contains('hidden');
+        }
+
+        // 在专注模式下点击圆圈
+        function clickCircleInFocus(taskIndex, circleIndex) {
+            const tasks = Storage.getTasks();
+            const task = tasks[taskIndex];
+            
+            if (task.type !== 'numeric') return;
+            
+            const current = task.current || 0;
+            const total = task.total || 1;
+            
+            if (circleIndex < current) {
+                if (circleIndex === current - 1) {
+                    task.current = circleIndex;
+                    Storage.setTasks(tasks);
+                    renderFocusTasks();
+                }
+                return;
+            }
+            
+            if (circleIndex === current && circleIndex < total) {
+                task.current = current + 1;
+                Storage.setTasks(tasks);
+                recordFocusTime(taskIndex); // 记录专注时间
+                showEncouragement();
+                renderFocusTasks();
+            }
+        }
+
+        // 在专注模式下点击阶段节点
+        function clickStageNodeInFocus(taskIndex, stepIndex) {
+            const tasks = Storage.getTasks();
+            const task = tasks[taskIndex];
+            
+            if (task.type === 'stage' && task.steps && task.steps[stepIndex]) {
+                const clickedStep = task.steps[stepIndex];
+                const wasCompleted = clickedStep.completed;
+                
+                if (wasCompleted) {
+                    for (let i = stepIndex; i < task.steps.length; i++) {
+                        task.steps[i].completed = false;
+                    }
+                } else {
+                    for (let i = 0; i <= stepIndex; i++) {
+                        task.steps[i].completed = true;
+                    }
+                    recordFocusTime(taskIndex); // 记录专注时间
+                    showEncouragement();
+                }
+                
+                Storage.setTasks(tasks);
+                renderFocusTasks();
+            }
+        }
+
+        // 开始番茄钟
+        // 播放提示音
+        function playNotificationSound() {
+            try {
+                // 创建音频上下文
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // 设置音调（温和的音调）
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                
+                // 设置音量（温和）
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                // 播放
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            } catch (e) {
+                // 如果音频API不可用，静默失败
+                console.log('Audio not available');
+            }
+        }
+
+        // 记录专注时间
+        function recordFocusTime(taskIndex) {
+            if (pomodoroRunning && focusStartTime) {
+                const now = Date.now();
+                const focusDuration = Math.floor((now - (lastTaskUpdateTime || focusStartTime)) / 1000); // 秒
+                
+                if (focusDuration > 0) {
+                    // 保存专注时间到localStorage
+                    const focusRecords = JSON.parse(localStorage.getItem('focusRecords') || '[]');
+                    focusRecords.push({
+                        taskIndex: taskIndex,
+                        duration: focusDuration,
+                        timestamp: now
+                    });
+                    localStorage.setItem('focusRecords', JSON.stringify(focusRecords));
+                }
+                
+                lastTaskUpdateTime = now;
+            }
+        }
+
+        function startPomodoro() {
+            if (pomodoroRunning) return;
+            
+            pomodoroRunning = true;
+            focusStartTime = Date.now();
+            lastTaskUpdateTime = focusStartTime;
+            
+            document.getElementById('startPomodoroBtn').classList.add('hidden');
+            document.getElementById('pausePomodoroBtn').classList.remove('hidden');
+            
+            pomodoroInterval = setInterval(() => {
+                pomodoroTime--;
+                updatePomodoroDisplay();
+                
+                if (pomodoroTime <= 0) {
+                    pausePomodoro();
+                    playNotificationSound();
+                    showEncouragement();
+                    setTimeout(() => {
+                        alert('🎉 Focus time is up! Take a break!');
+                    }, 500);
+                    resetPomodoro();
+                }
+            }, 1000);
+        }
+
+        // 暂停番茄钟
+        function pausePomodoro() {
+            if (!pomodoroRunning) return;
+            
+            pomodoroRunning = false;
+            document.getElementById('startPomodoroBtn').classList.remove('hidden');
+            document.getElementById('pausePomodoroBtn').classList.add('hidden');
+            
+            if (pomodoroInterval) {
+                clearInterval(pomodoroInterval);
+                pomodoroInterval = null;
+            }
+        }
+
+        // 重置番茄钟
+        function resetPomodoro() {
+            pausePomodoro();
+            pomodoroTime = 25 * 60;
+            focusStartTime = null;
+            lastTaskUpdateTime = null;
+            updatePomodoroDisplay();
+        }
+
+        // 增加5分钟
+        function increasePomodoroTime() {
+            if (pomodoroRunning) return;
+            pomodoroTime = Math.min(pomodoroTime + 5 * 60, 120 * 60); // 最多120分钟
+            updatePomodoroDisplay();
+        }
+
+        // 减少5分钟
+        function decreasePomodoroTime() {
+            if (pomodoroRunning) return;
+            pomodoroTime = Math.max(pomodoroTime - 5 * 60, 5 * 60); // 最少5分钟
+            updatePomodoroDisplay();
+        }
+
+        // 更新番茄钟显示
+        function updatePomodoroDisplay() {
+            const minutes = Math.floor(pomodoroTime / 60);
+            const seconds = pomodoroTime % 60;
+            const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('pomodoroTimer').textContent = display;
+        }
+
+        // 编辑目标
+        function editGoal() {
+            const titleElement = document.getElementById('goalTitle');
+            if (!titleElement) return;
+            
+            // 如果已经是输入框，不重复创建
+            if (titleElement.tagName === 'INPUT') return;
+            
+            const currentGoal = titleElement.textContent;
+            const parentContainer = titleElement.parentElement;
+            
+            // 创建输入框
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentGoal;
+            input.id = 'goalTitle'; // 保持相同的 ID
+            input.className = 'text-5xl font-bold text-gray-900 tracking-tight bg-transparent border-b-2 border-blue-500 outline-none w-full px-2 -mx-2';
+            input.style.fontSize = 'inherit';
+            input.style.fontWeight = 'inherit';
+            input.style.letterSpacing = 'inherit';
+            
+            // 保存函数
+            const saveGoal = () => {
+                const newGoal = input.value.trim();
+                
+                // 恢复标题元素
+                const newTitle = document.createElement('h1');
+                newTitle.id = 'goalTitle';
+                newTitle.className = 'text-5xl font-bold text-gray-900 tracking-tight cursor-pointer hover:bg-gray-100 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors border-2 border-transparent hover:border-gray-200';
+                newTitle.textContent = newGoal || currentGoal;
+                newTitle.onclick = editGoal;
+                
+                if (newGoal && newGoal !== currentGoal) {
+                    Storage.setGoal(newGoal);
+                }
+                
+                input.replaceWith(newTitle);
+            };
+            
+            // 按回车保存
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveGoal();
+                }
+                if (e.key === 'Escape') {
+                    const newTitle = document.createElement('h1');
+                    newTitle.id = 'goalTitle';
+                    newTitle.className = 'text-5xl font-bold text-gray-900 tracking-tight cursor-pointer hover:bg-gray-100 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors border-2 border-transparent hover:border-gray-200';
+                    newTitle.textContent = currentGoal;
+                    newTitle.onclick = editGoal;
+                    input.replaceWith(newTitle);
+                }
+            });
+            
+            // 失去焦点时保存
+            input.addEventListener('blur', saveGoal);
+            
+            // 替换标题为输入框
+            titleElement.replaceWith(input);
+            
+            // 自动聚焦并选中文本
+            setTimeout(() => {
+                input.focus();
+                input.select();
+            }, 0);
+        }
+
+        // 渲染任务列表
+        function renderTasks() {
+            const tasks = Storage.getTasks();
+            const container = document.getElementById('taskList');
+            container.innerHTML = '';
+
+            if (tasks.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">No tasks yet, click the button below to add</p>';
+                return;
+            }
+
+            const colorMap = {
+                0: 'bg-blue-500',
+                1: 'bg-purple-500',
+                2: 'bg-green-500',
+                3: 'bg-orange-500',
+                4: 'bg-pink-500',
+                5: 'bg-indigo-500'
+            };
+            
+            tasks.forEach((task, index) => {
+                const colorClass = colorMap[index % 6];
+                const taskType = task.type || 'numeric'; // 兼容旧数据
+                
+                let cardHTML = '';
+                
+                if (taskType === 'numeric') {
+                    // 数字统计类任务 - 使用圆圈显示
+                    const total = task.total || 1;
+                    const current = task.current || 0;
+                    
+                    // 生成所有圆圈（不折叠）
+                    const circles = [];
+                    for (let i = 0; i < total; i++) {
+                        const isCompleted = i < current;
+                        const isNext = i === current; // 下一个可点击的圆圈
+                        circles.push(`
+                            <button
+                                onclick="clickCircle(${index}, ${i})"
+                                class="w-7 h-7 rounded-full border-2 transition-all duration-200 ${
+                                    isCompleted 
+                                        ? 'bg-green-500 border-green-500 hover:bg-green-600 cursor-pointer' 
+                                        : isNext
+                                        ? 'bg-white border-gray-400 hover:border-green-500 hover:bg-green-50 cursor-pointer'
+                                        : 'bg-white border-gray-300 cursor-not-allowed opacity-50'
+                                }"
+                                title="Item ${i + 1}${isCompleted ? ' (Completed)' : isNext ? ' (Click to complete)' : ' (Complete in order)'}"
+                                ${!isCompleted && !isNext ? 'disabled' : ''}
+                            ></button>
+                        `);
+                    }
+                    
+                    cardHTML = `
+                        <div class="flex items-start gap-4">
+                            <!-- 今天要做复选框 -->
+                            <input 
+                                type="checkbox" 
+                                ${task.today ? 'checked' : ''}
+                                onchange="toggleToday(${index})"
+                                class="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                            >
+                            
+                            <div class="flex-1">
+                                <!-- 任务名称和进度 -->
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center gap-2">
+                                        <h2 class="text-xl font-semibold text-gray-800">${task.name}</h2>
+                                        ${task.estimatedTime ? `<span class="text-sm text-gray-500">⏱️ ${task.estimatedTime}min</span>` : ''}
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span 
+                                            class="text-sm text-gray-500 cursor-pointer hover:text-blue-600 hover:underline transition-colors"
+                                            onclick="editTotal(${index})"
+                                            title="Click to edit total count"
+                                        >${current}/${total}</span>
+                                        <button
+                                            onclick="showEditTaskModal(${index})"
+                                            class="text-gray-400 hover:text-blue-600 transition-colors"
+                                            title="Edit task"
+                                        >
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- 圆圈进度显示 -->
+                                <div class="flex flex-wrap gap-1.5 mb-4">
+                                    ${circles.join('')}
+                                </div>
+                                
+                                <!-- 操作按钮 -->
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <button 
+                                        onclick="deleteTask(${index})"
+                                        class="px-3 py-1 text-sm text-red-500 hover:text-red-700"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // 阶段流程类任务 - 横向步骤轴
+                    const steps = task.steps || [];
+                    const completedSteps = steps.filter(s => s.completed).length;
+                    const totalSteps = steps.length;
+                    const percentage = totalSteps > 0 ? (completedSteps / totalSteps * 100) : 0;
+                    
+                    // 生成横向步骤节点
+                    const stepsHTML = steps.map((step, stepIndex) => {
+                        const isCompleted = step.completed;
+                        const isClickable = true; // 所有节点都可点击
+                        
+                        return `
+                            <div class="flex flex-col items-center flex-shrink-0" style="min-width: 80px;">
+                                <button
+                                    onclick="clickStageNode(${index}, ${stepIndex})"
+                                    class="w-10 h-10 rounded-full border-2 transition-all duration-300 ${
+                                        isCompleted 
+                                            ? 'bg-blue-500 border-blue-500 hover:bg-blue-600' 
+                                            : 'bg-white border-gray-300 hover:border-blue-400'
+                                    } cursor-pointer mb-2"
+                                    title="${step.name}"
+                                >
+                                    ${isCompleted ? `
+                                        <svg class="w-6 h-6 mx-auto text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    ` : ''}
+                                </button>
+                                <span class="text-xs text-center text-gray-600 max-w-[80px] break-words">${step.name}</span>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    // 连接线（在节点之间）
+                    const connectorsHTML = steps.length > 1 ? steps.slice(0, -1).map((step, stepIndex) => {
+                        const isCompleted = step.completed;
+                        return `
+                            <div class="flex-1 h-0.5 mx-2 transition-colors duration-300 ${
+                                isCompleted ? 'bg-blue-500' : 'bg-gray-200'
+                            }" style="margin-top: 20px;"></div>
+                        `;
+                    }).join('') : '';
+                    
+                    // 组合节点和连接线
+                    const stepsWithConnectors = steps.map((step, stepIndex) => {
+                        const isCompleted = step.completed;
+                        const nodeHTML = `
+                            <div class="flex flex-col items-center flex-shrink-0" style="min-width: 80px;">
+                                <button
+                                    onclick="clickStageNode(${index}, ${stepIndex})"
+                                    class="w-10 h-10 rounded-full border-2 transition-all duration-300 ${
+                                        isCompleted 
+                                            ? 'bg-blue-500 border-blue-500 hover:bg-blue-600' 
+                                            : 'bg-white border-gray-300 hover:border-blue-400'
+                                    } cursor-pointer mb-2"
+                                    title="${step.name}"
+                                >
+                                    ${isCompleted ? `
+                                        <svg class="w-6 h-6 mx-auto text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    ` : ''}
+                                </button>
+                                <span class="text-xs text-center text-gray-600 max-w-[80px] break-words">${step.name}</span>
+                            </div>
+                        `;
+                        
+                        // 最后一个节点后不加连接线
+                        if (stepIndex < steps.length - 1) {
+                            const connectorHTML = `
+                                <div class="flex-1 h-0.5 mx-2 transition-colors duration-300 ${
+                                    isCompleted ? 'bg-blue-500' : 'bg-gray-200'
+                                }" style="margin-top: 20px;"></div>
+                            `;
+                            return nodeHTML + connectorHTML;
+                        }
+                        return nodeHTML;
+                    }).join('');
+                    
+                    cardHTML = `
+                        <div class="flex items-start gap-4">
+                            <!-- 今天要做复选框 -->
+                            <input 
+                                type="checkbox" 
+                                ${task.today ? 'checked' : ''}
+                                onchange="toggleToday(${index})"
+                                class="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                            >
+                            
+                            <div class="flex-1">
+                                <!-- 任务名称和进度 -->
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center gap-2">
+                                        <h2 class="text-xl font-semibold text-gray-800">${task.name}</h2>
+                                        ${task.estimatedTime ? `<span class="text-sm text-gray-500">⏱️ ${task.estimatedTime}min</span>` : ''}
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-sm text-gray-500">${completedSteps}/${totalSteps}</span>
+                                        <button
+                                            onclick="showEditTaskModal(${index})"
+                                            class="text-gray-400 hover:text-blue-600 transition-colors"
+                                            title="Edit task"
+                                        >
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- 进度条 -->
+                                <div class="w-full bg-gray-100 rounded-full h-2.5 mb-4">
+                                    <div 
+                                        class="${colorClass} h-2.5 rounded-full transition-all duration-300" 
+                                        style="width: ${percentage}%"
+                                    ></div>
+                                </div>
+                                
+                                <!-- 横向步骤轴 -->
+                                <div class="mb-4 overflow-x-auto stage-scroll-container">
+                                    <div class="flex items-start pb-2" style="min-width: max-content;">
+                                        ${stepsWithConnectors}
+                                    </div>
+                                </div>
+                                
+                                <!-- 操作按钮 -->
+                                <div class="flex items-center gap-2">
+                                    <button 
+                                        onclick="deleteTask(${index})"
+                                        class="px-3 py-1 text-sm text-red-500 hover:text-red-700"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                const card = document.createElement('div');
+                card.className = `bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow`;
+                card.innerHTML = cardHTML;
+                container.appendChild(card);
+            });
+        }
+
+        // 切换今天要做
+        function toggleToday(index) {
+            const tasks = Storage.getTasks();
+            tasks[index].today = !tasks[index].today;
+            Storage.setTasks(tasks);
+            renderTasks();
+        }
+
+        // Encouragement Messages
+        const encouragements = [
+            'One step closer to your YouTube dream!',
+            'Awesome! Keep it up!',
+            'You\'re getting better!',
+            'Every step matters!',
+            'Persistence is victory!',
+            'You\'re doing great!',
+            'Keep going!',
+            'You\'re closer to your goal!',
+            'Amazing progress!',
+            'Keep this momentum!'
+        ];
+
+        // Show Encouragement
+        function showEncouragement() {
+            const message = encouragements[Math.floor(Math.random() * encouragements.length)];
+            
+            // 创建提示框
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 animate-fade-in';
+            toast.textContent = message;
+            toast.style.animation = 'fadeInOut 2s ease-in-out';
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'fadeOut 0.5s ease-in-out';
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 500);
+            }, 1500);
+        }
+
+        // 更新进度（仅数字统计类）
+        function updateProgress(index, delta) {
+            const tasks = Storage.getTasks();
+            const task = tasks[index];
+            
+            // 只对数字统计类任务有效
+            if (task.type !== 'numeric') return;
+            
+            const oldCurrent = task.current;
+            task.current = Math.max(0, task.current + delta);
+            Storage.setTasks(tasks);
+            
+            // 如果是+1且进度增加了，显示鼓励语
+            if (delta > 0 && task.current > oldCurrent) {
+                showEncouragement();
+            }
+            
+            renderTasks();
+        }
+
+        // 设置进度（仅数字统计类）
+        function setProgress(index, value) {
+            const tasks = Storage.getTasks();
+            const task = tasks[index];
+            
+            // 只对数字统计类任务有效
+            if (task.type !== 'numeric') return;
+            
+            task.current = Math.max(0, parseInt(value) || 0);
+            Storage.setTasks(tasks);
+            renderTasks();
+        }
+
+        // 设置总数（仅数字统计类）
+        function setTotal(index, value) {
+            const tasks = Storage.getTasks();
+            const task = tasks[index];
+            
+            // 只对数字统计类任务有效
+            if (task.type !== 'numeric') return;
+            
+            task.total = Math.max(1, parseInt(value) || 1);
+            Storage.setTasks(tasks);
+            renderTasks();
+        }
+
+        // 编辑总数（点击进度数字时）
+        function editTotal(index) {
+            const tasks = Storage.getTasks();
+            const task = tasks[index];
+            
+            // 只对数字统计类任务有效
+            if (task.type !== 'numeric') return;
+            
+            const currentTotal = task.total;
+            const currentProgress = task.current || 0;
+            const newTotal = prompt(`Edit total count (current: ${currentTotal}):`, currentTotal);
+            
+            if (newTotal !== null && newTotal !== '') {
+                const total = parseInt(newTotal);
+                if (!isNaN(total) && total > 0) {
+                    task.total = total;
+                    // 如果当前进度超过新的总数，调整为新的总数
+                    if (currentProgress > total) {
+                        task.current = total;
+                    }
+                    Storage.setTasks(tasks);
+                    renderTasks();
+                } else {
+                    alert('Please enter a valid number');
+                }
+            }
+        }
+
+        // 点击圆圈（数字统计类）
+        function clickCircle(taskIndex, circleIndex) {
+            const tasks = Storage.getTasks();
+            const task = tasks[taskIndex];
+            
+            // 只对数字统计类任务有效
+            if (task.type !== 'numeric') return;
+            
+            const current = task.current || 0;
+            const total = task.total || 1;
+            
+            // 如果点击的是已完成的圆圈（最后一个已完成的），可以取消完成
+            if (circleIndex < current) {
+                // 只能取消最后一个已完成的
+                if (circleIndex === current - 1) {
+                    task.current = circleIndex;
+                    Storage.setTasks(tasks);
+                    if (!isInFocusMode()) {
+                        renderTasks();
+                    }
+                }
+                return;
+            }
+            
+            // 如果点击的是下一个未完成的圆圈（按顺序完成）
+            if (circleIndex === current && circleIndex < total) {
+                task.current = current + 1;
+                Storage.setTasks(tasks);
+                
+                // 显示鼓励语
+                showEncouragement();
+                
+                if (!isInFocusMode()) {
+                    renderTasks();
+                }
+            }
+            // 如果点击的是更后面的圆圈，不做任何操作（已通过 disabled 属性禁用）
+        }
+
+        // 切换步骤完成状态（阶段流程类）- 旧版本，保留兼容
+        function toggleStep(taskIndex, stepIndex) {
+            const tasks = Storage.getTasks();
+            const task = tasks[taskIndex];
+            
+            if (task.type === 'stage' && task.steps && task.steps[stepIndex]) {
+                const step = task.steps[stepIndex];
+                step.completed = !step.completed;
+                
+                // 如果完成步骤，显示鼓励语
+                if (step.completed) {
+                    showEncouragement();
+                }
+                
+                Storage.setTasks(tasks);
+                renderTasks();
+            }
+        }
+
+        // 点击阶段节点（阶段流程类）- 新版本，点击节点时该节点及之前的所有节点都完成
+        function clickStageNode(taskIndex, stepIndex) {
+            const tasks = Storage.getTasks();
+            const task = tasks[taskIndex];
+            
+            if (task.type === 'stage' && task.steps && task.steps[stepIndex]) {
+                const clickedStep = task.steps[stepIndex];
+                const wasCompleted = clickedStep.completed;
+                
+                // 如果点击的是已完成的节点，取消该节点及之后的所有节点
+                if (wasCompleted) {
+                    for (let i = stepIndex; i < task.steps.length; i++) {
+                        task.steps[i].completed = false;
+                    }
+                } else {
+                    // 如果点击的是未完成的节点，完成该节点及之前的所有节点
+                    for (let i = 0; i <= stepIndex; i++) {
+                        task.steps[i].completed = true;
+                    }
+                    // 显示鼓励语
+                    showEncouragement();
+                }
+                
+                Storage.setTasks(tasks);
+                if (!isInFocusMode()) {
+                    renderTasks();
+                }
+            }
+        }
+
+        // 删除任务
+        function deleteTask(index) {
+            if (confirm('Are you sure you want to delete this task?')) {
+                const tasks = Storage.getTasks();
+                tasks.splice(index, 1);
+                Storage.setTasks(tasks);
+                renderTasks();
+            }
+        }
+
+        // 更新阶段预览（编辑弹窗）
+        function updateStagePreview(stepsText) {
+            const previewContainer = document.getElementById('editStagePreview');
+            if (!previewContainer) return;
+            
+            // 解析步骤
+            const stepNames = stepsText.split(/[,\n]/).filter(s => s.trim()).map(s => s.trim());
+            
+            if (stepNames.length === 0) {
+                previewContainer.querySelector('div').innerHTML = '<p class="text-gray-400 text-sm text-center py-4">Enter steps to see preview here</p>';
+                return;
+            }
+            
+            // 生成预览节点
+            const previewHTML = stepNames.map((stepName, stepIndex) => {
+                const nodeHTML = `
+                    <div class="flex flex-col items-center flex-shrink-0" style="min-width: 80px;">
+                        <div class="w-10 h-10 rounded-full border-2 bg-white border-gray-300 mb-2 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <span class="text-xs text-center text-gray-600 max-w-[80px] break-words">${stepName}</span>
+                    </div>
+                `;
+                
+                // 最后一个节点后不加连接线
+                if (stepIndex < stepNames.length - 1) {
+                    const connectorHTML = `
+                        <div class="flex-1 h-0.5 mx-2 bg-gray-200" style="margin-top: 20px;"></div>
+                    `;
+                    return nodeHTML + connectorHTML;
+                }
+                return nodeHTML;
+            }).join('');
+            
+            previewContainer.querySelector('div').innerHTML = previewHTML;
+        }
+
+        // 更新阶段预览（添加任务弹窗）
+        function updateStagePreviewForAdd(stepsText) {
+            const previewContainer = document.getElementById('stageStepsPreview');
+            if (!previewContainer) return;
+            
+            // 解析步骤
+            const stepNames = stepsText.split(/[,\n]/).filter(s => s.trim()).map(s => s.trim());
+            
+            if (stepNames.length === 0) {
+                previewContainer.querySelector('div').innerHTML = '<p class="text-gray-400 text-sm text-center py-4">Enter steps to see preview here</p>';
+                return;
+            }
+            
+            // 生成预览节点
+            const previewHTML = stepNames.map((stepName, stepIndex) => {
+                const nodeHTML = `
+                    <div class="flex flex-col items-center flex-shrink-0" style="min-width: 80px;">
+                        <div class="w-10 h-10 rounded-full border-2 bg-white border-gray-300 mb-2 flex items-center justify-center">
+                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <span class="text-xs text-center text-gray-600 max-w-[80px] break-words">${stepName}</span>
+                    </div>
+                `;
+                
+                // 最后一个节点后不加连接线
+                if (stepIndex < stepNames.length - 1) {
+                    const connectorHTML = `
+                        <div class="flex-1 h-0.5 mx-2 bg-gray-200" style="margin-top: 20px;"></div>
+                    `;
+                    return nodeHTML + connectorHTML;
+                }
+                return nodeHTML;
+            }).join('');
+            
+            previewContainer.querySelector('div').innerHTML = previewHTML;
+        }
+
+        // 显示编辑任务模态框
+        function showEditTaskModal(index) {
+            const tasks = Storage.getTasks();
+            const task = tasks[index];
+            
+            if (!task) return;
+            
+            const modal = document.getElementById('editTaskModal');
+            modal.classList.remove('hidden');
+            
+            // 保存当前编辑的任务索引
+            modal.dataset.taskIndex = index;
+            
+            // 填充任务名称
+            document.getElementById('editTaskName').value = task.name || '';
+            
+            // 根据任务类型显示相应的输入框
+            if (task.type === 'numeric') {
+                // 数字统计类
+                document.getElementById('editNumericInputsContainer').classList.remove('hidden');
+                document.getElementById('editStageStepsContainer').classList.add('hidden');
+                
+                document.getElementById('editTotal').value = task.total || 1;
+                document.getElementById('editCurrent').value = task.current || 0;
+                document.getElementById('editEstimatedTime').value = task.estimatedTime || '';
+            } else {
+                // 阶段流程类
+                document.getElementById('editNumericInputsContainer').classList.add('hidden');
+                document.getElementById('editStageStepsContainer').classList.remove('hidden');
+                
+                const steps = task.steps || [];
+                const stepNames = steps.map(s => s.name).join(',');
+                const stepsInput = document.getElementById('editStageStepsInput');
+                stepsInput.value = stepNames;
+                
+                document.getElementById('editStageEstimatedTime').value = task.estimatedTime || '';
+                
+                // 初始化预览
+                updateStagePreview(stepsInput.value);
+                
+                // 监听输入变化，实时更新预览
+                stepsInput.addEventListener('input', function() {
+                    updateStagePreview(this.value);
+                });
+            }
+            
+            // 关闭模态框的函数
+            const closeModal = () => {
+                modal.classList.add('hidden');
+            };
+            
+            // 点击背景关闭
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            };
+            
+            // 取消按钮
+            document.getElementById('cancelEditTaskBtn').onclick = closeModal;
+            
+            // 保存按钮
+            document.getElementById('confirmEditTaskBtn').onclick = () => {
+                const taskIndex = parseInt(modal.dataset.taskIndex);
+                const tasks = Storage.getTasks();
+                const task = tasks[taskIndex];
+                
+                if (!task) return;
+                
+                // Update task name
+                const newName = document.getElementById('editTaskName').value.trim();
+                if (!newName) {
+                    alert('Please enter a task name');
+                    return;
+                }
+                task.name = newName;
+                
+                if (task.type === 'numeric') {
+                    // Update numeric task
+                    const total = parseInt(document.getElementById('editTotal').value) || 1;
+                    const current = parseInt(document.getElementById('editCurrent').value) || 0;
+                    const estimatedTime = parseInt(document.getElementById('editEstimatedTime').value) || null;
+                    
+                    task.total = Math.max(1, total);
+                    task.current = Math.max(0, Math.min(current, task.total)); // Ensure current progress doesn't exceed total
+                    task.estimatedTime = estimatedTime;
+                } else {
+                    // Update stage-based task
+                    const stepsText = document.getElementById('editStageStepsInput').value.trim();
+                    if (!stepsText) {
+                        alert('Please enter at least one step');
+                        return;
+                    }
+                    
+                    // Support comma or line break separation
+                    const stepNames = stepsText.split(/[,\n]/).filter(s => s.trim()).map(s => s.trim());
+                    if (stepNames.length === 0) {
+                        alert('Please enter at least one step');
+                        return;
+                    }
+                    
+                    // 保留已完成步骤的状态（如果新步骤名称与旧步骤名称匹配）
+                    const oldSteps = task.steps || [];
+                    const oldStepsMap = {};
+                    oldSteps.forEach(step => {
+                        oldStepsMap[step.name] = step.completed;
+                    });
+                    
+                    // 创建新步骤，保留匹配步骤的完成状态
+                    const newSteps = stepNames.map(stepName => ({
+                        name: stepName,
+                        completed: oldStepsMap[stepName] || false
+                    }));
+                    
+                    const estimatedTime = parseInt(document.getElementById('editStageEstimatedTime').value) || null;
+                    
+                    task.steps = newSteps;
+                    task.estimatedTime = estimatedTime;
+                }
+                
+                Storage.setTasks(tasks);
+                renderTasks();
+                closeModal();
+            };
+        }
+
+        // 显示添加任务模态框
+        function showAddTaskModal() {
+            const modal = document.getElementById('addTaskModal');
+            modal.classList.remove('hidden');
+            
+            // 重置表单
+            document.getElementById('modalTaskName').value = '';
+            document.querySelector('input[name="taskType"][value="numeric"]').checked = true;
+            document.getElementById('modalTotal').value = '20';
+            document.getElementById('modalCurrent').value = '0';
+            document.getElementById('stageStepsInput').value = '';
+            document.getElementById('stageStepsContainer').classList.add('hidden');
+            document.getElementById('numericInputsContainer').classList.remove('hidden');
+            
+            // 监听任务类型变化
+            document.querySelectorAll('input[name="taskType"]').forEach(radio => {
+                radio.onchange = function() {
+                    if (this.value === 'stage') {
+                        document.getElementById('stageStepsContainer').classList.remove('hidden');
+                        document.getElementById('numericInputsContainer').classList.add('hidden');
+                        
+                        // 初始化预览
+                        const stepsInput = document.getElementById('stageStepsInput');
+                        updateStagePreviewForAdd(stepsInput.value);
+                        
+                        // 监听输入变化，实时更新预览
+                        stepsInput.addEventListener('input', function() {
+                            updateStagePreviewForAdd(this.value);
+                        });
+                    } else {
+                        document.getElementById('stageStepsContainer').classList.add('hidden');
+                        document.getElementById('numericInputsContainer').classList.remove('hidden');
+                    }
+                };
+            });
+            
+            // 关闭模态框的函数
+            const closeModal = () => {
+                modal.classList.add('hidden');
+            };
+            
+            // 点击背景关闭
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            };
+            
+            // 取消按钮
+            document.getElementById('cancelAddTaskBtn').onclick = closeModal;
+            
+            // 确认按钮
+            document.getElementById('confirmAddTaskBtn').onclick = () => {
+                const name = document.getElementById('modalTaskName').value.trim();
+                if (!name) {
+                    alert('Please enter a task name');
+                    return;
+                }
+                
+                const taskType = document.querySelector('input[name="taskType"]:checked').value;
+                const tasks = Storage.getTasks();
+                
+                if (taskType === 'numeric') {
+                    // Numeric tracking
+                    const total = parseInt(document.getElementById('modalTotal').value) || 20;
+                    const current = parseInt(document.getElementById('modalCurrent').value) || 0;
+                    const estimatedTime = parseInt(document.getElementById('modalEstimatedTime').value) || null;
+                    
+                    tasks.push({
+                        type: 'numeric',
+                        name: name,
+                        current: Math.max(0, Math.min(current, total)),
+                        total: Math.max(1, total),
+                        estimatedTime: estimatedTime,
+                        today: false
+                    });
+                } else {
+                    // Stage-based
+                    const stepsText = document.getElementById('stageStepsInput').value.trim();
+                    if (!stepsText) {
+                        alert('Please enter at least one step');
+                        return;
+                    }
+                    
+                    const stepNames = stepsText.split(/[,\n]/).filter(s => s.trim()).map(s => s.trim());
+                    if (stepNames.length === 0) {
+                        alert('Please enter at least one step');
+                        return;
+                    }
+                    
+                    const steps = stepNames.map(stepName => ({
+                        name: stepName,
+                        completed: false
+                    }));
+                    const estimatedTime = parseInt(document.getElementById('modalStageEstimatedTime').value) || null;
+                    
+                    tasks.push({
+                        type: 'stage',
+                        name: name,
+                        steps: steps,
+                        estimatedTime: estimatedTime,
+                        today: false
+                    });
+                }
+                
+                Storage.setTasks(tasks);
+                renderTasks();
+                closeModal();
+            };
+        }
+
+        // 页面加载时初始化
+        init();
+    </script>
+</body>
+</html>
